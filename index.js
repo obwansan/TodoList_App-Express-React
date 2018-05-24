@@ -1,81 +1,87 @@
-var express = require('express');
-var app = express();
+// require in express and call it to create the 'app'
+// got it as already run 'npm install express —save'
+const express = require('express');
+const app = express();
 
 app.use(express.json());       // to support JSON-encoded bodies
 app.use(express.urlencoded()); // to support URL-encoded bodies
 
-// get mongoDB (the .MongoClient is just a MongoDB syntax thing)
+// get mongoDB (don't need to know what .MongoClient does)
 const mongoClient = require('mongodb').MongoClient;
+const ObjectID = require('mongodb').ObjectID;
 
-// the url is the location of the mongo DB. places is the database.
+// the url is the location of the mongoDB. 'places' is the name of the database.
 const url = 'mongodb://localhost:27017/places';
 
-// MongoDb connection
-// mongoClient.connect(url, { useNewUrlParser: true }, function(err, client) {
-//     console.log("Connected correctly to MongoDB");
-//     let db = client.db('todos');
-    // insertIntoDb(db);
-    // getDataFromDb(db);
-    // updateDataInDb(db);
-    // removeDataInDb(db);
-// });
+// get all todos from DB
+app.get('/api/todos', function (req, res) {
 
-// MongoDb get all todos from DB
-app.get('/todos', function (req, res) {
-    mongoClient.connect(url, { useNewUrlParser: true }, function(err, client) {
-        // console.log("Connected correctly to MongoDB");
-        let db = client.db('places');
-        getDataFromDb(db);
-    });
-
-    var getDataFromDb = function (db) {
-        var collection = db.collection('todos');
+    const getDataFromDb = function (db) {
+        const collection = db.collection('todos');
         collection.find({}).toArray(function (err, docs) {
-            // console.log("Found the following todos: ");
-            // console.log(docs);
             res.json(docs);
         })
     }
+    // MongoDb connection
+    mongoClient.connect(url, { useNewUrlParser: true }, function(err, client) {
+        let db = client.db('places');
+        getDataFromDb(db);
+    });
 });
 
-// MongoDb insert into query
-app.post('/todos/update', function (req, res) {
-    mongoClient.connect(url, { useNewUrlParser: true }, function(err, client) {
-        // console.log("Connected correctly to MongoDB");
-        let db = client.db('places');
-        updateDataInDb(db);
-    });
+// update a _todo in DB
+app.put('/api/todos/update', function (req, res) {
 
-    var updateDataInDb = function (db) {
-        var collection = db.collection('todos');
-        collection.updateOne( req.body
-            , {
-                $set: {"todo": "new todo"}, function (err, result) {
-                    console.log("Updated the document with 'Buy shopping' now having updated:true");
-                }
+    const id = req.body._id;
+    const todo = req.body.todo;
+    const completeFlag = req.body.completed;
+
+    const updateTodoInDb = function (db, id, todo, completeFlag) {
+        const collection = db.collection('todos');
+        collection.updateOne(
+            { _id : ObjectID(id) },
+            { $set:
+                    {
+                    todo: todo,
+                    completed: completeFlag
+                    },
+                    function (err, result) {
+                        res.json.result;
+                    }
             })
-    }
+    };
+    // MongoDb connection
+    mongoClient.connect(url, { useNewUrlParser: true }, function(err, client) {
+        let db = client.db('places');
+        updateTodoInDb(db, id, todo, completeFlag);
+    });
 
     res.json(req.body)
 });
 
-var insertIntoDb = function(db) {
-    db.collection('todos').insertOne(
-        {
-            "todo" : "Go back to the future",
-            "completed" : "false"
-        }
-        , function(err, result) {
-            console.log("Inserted a todo into the todoList collection");
-        })
-};
+// MongoDb add a todo to DB
+app.post('/api/todos/add', function (req, res) {
 
-var removeDataInDb = function(db) {
+    var insertIntoDb = function (db) {
+
+        var collection = db.collection('todos');
+        collection.insertOne(req.body, function (err, result) {
+                res.json(req.body)
+            })
+    };
+    // MongoDb connection
+    mongoClient.connect(url, {useNewUrlParser: true}, function (err, client) {
+        let db = client.db('places');
+        insertIntoDb(db);
+    });
+});
+
+
+var removeDataInDb = function (db) {
     var collection = db.collection('bristol');
     collection.deleteOne({"address": "beaufort road"}), function (err, result) {
         console.log("Removed the document with the field address = beaufort road");
-        }
-    };
-
+    }
+};
 
 app.listen(3000, () => console.log('Example app listening on port 3000!'));
