@@ -13,75 +13,79 @@ const ObjectID = require('mongodb').ObjectID;
 // the url is the location of the mongoDB. 'places' is the name of the database.
 const url = 'mongodb://localhost:27017/places';
 
-// get all todos from DB
+// api route - get all todos from DB
 app.get('/api/todos', function (req, res) {
 
+    // declare function
     const getDataFromDb = function (db) {
         const collection = db.collection('todos');
         collection.find({}).toArray(function (err, docs) {
             res.json(docs);
         })
     }
-    // MongoDb connection
+    // create MongoDb connection
     mongoClient.connect(url, { useNewUrlParser: true }, function(err, client) {
         let db = client.db('places');
+
+        // call function
         getDataFromDb(db);
     });
 });
 
-// update a _todo in DB
+// api route - update a _todo in DB
 app.put('/api/todos/update', function (req, res) {
 
+    // get values from request body object
     const id = req.body._id;
     const todo = req.body.todo;
-    const completeFlag = req.body.completed;
+    const completedFlag = req.body.completed;
+    const deletedFlag = req.body.deleted;
 
-    const updateTodoInDb = function (db, id, todo, completeFlag) {
+    // declare function
+    const updateTodoInDb = function (db, id, todo, completedFlag, deletedFlag) {
         const collection = db.collection('todos');
         collection.updateOne(
             { _id : ObjectID(id) },
             { $set:
                     {
                     todo: todo,
-                    completed: completeFlag
+                    completed: completedFlag,
+                    deleted: deletedFlag
                     },
                     function (err, result) {
                         res.json.result;
                     }
             })
     };
-    // MongoDb connection
+    // create MongoDb connection
     mongoClient.connect(url, { useNewUrlParser: true }, function(err, client) {
         let db = client.db('places');
-        updateTodoInDb(db, id, todo, completeFlag);
-    });
 
+        // call function
+        updateTodoInDb(db, id, todo, completedFlag, deletedFlag);
+    });
+    // return request body object for testing / debugging
     res.json(req.body)
 });
 
-// MongoDb add a todo to DB
+// MongoDb add a _todo to DB
 app.post('/api/todos/add', function (req, res) {
 
-    var insertIntoDb = function (db) {
-
-        var collection = db.collection('todos');
+    // declare function
+    const insertIntoDb = function (db) {
+        const collection = db.collection('todos');
         collection.insertOne(req.body, function (err, result) {
                 res.json(req.body)
             })
     };
-    // MongoDb connection
+    // create MongoDb connection
     mongoClient.connect(url, {useNewUrlParser: true}, function (err, client) {
-        let db = client.db('places');
+        const db = client.db('places');
+
+        // call function
         insertIntoDb(db);
     });
 });
 
-
-var removeDataInDb = function (db) {
-    var collection = db.collection('bristol');
-    collection.deleteOne({"address": "beaufort road"}), function (err, result) {
-        console.log("Removed the document with the field address = beaufort road");
-    }
-};
-
+// listen on port 3000 for the node app running (node index.js)
 app.listen(3000, () => console.log('Example app listening on port 3000!'));
